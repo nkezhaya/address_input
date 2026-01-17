@@ -63,11 +63,7 @@ defmodule AddressInput do
   def countries do
     @metadata
     |> Enum.filter(fn
-      {<<"data/", _::binary-size(2)>>, _} -> true
-      _ -> false
-    end)
-    |> Enum.filter(fn
-      {_, %{"name" => name}} when is_binary(name) -> true
+      {<<"data/", _::binary-size(2)>>, %{"name" => name}} when is_binary(name) -> true
       _ -> false
     end)
     |> Enum.map(fn {_, metadata} -> build_country!(metadata) end)

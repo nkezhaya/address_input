@@ -44,7 +44,9 @@ defmodule AddressInputTest do
     test "returns the matching postal code for known formats" do
       assert {:ok, "95000"} = AddressInput.parse_postal_code("95000", "US")
       assert {:ok, "95000-1234"} = AddressInput.parse_postal_code("95000-1234", "US")
-      assert {:ok, "95000"} = AddressInput.parse_postal_code("95000", AddressInput.get_country("US"))
+
+      assert {:ok, "95000"} =
+               AddressInput.parse_postal_code("95000", AddressInput.get_country("US"))
     end
 
     test "rejects non-matching values" do
