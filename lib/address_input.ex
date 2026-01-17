@@ -10,8 +10,8 @@ defmodule AddressInput do
 
   ## Primary entry points
 
-  - `countries/0` returns all available countries sorted by ISO 3166-1 alpha-2
-    code. Each country includes parsed subregions.
+  - `countries/0` returns all available countries sorted by name. Each country
+    includes parsed subregions.
   - `get_country/1` returns a single country by ISO 3166-1 alpha-2 code (case
     insensitive), or `nil` if it is not present. For compatibility with the raw
     dataset keys it also accepts `"data/XX"` strings.
@@ -69,7 +69,7 @@ defmodule AddressInput do
       _ -> false
     end)
     |> Enum.map(fn {_, metadata} -> build_country!(metadata) end)
-    |> Enum.sort_by(& &1.id)
+    |> Enum.sort_by(& &1.name)
   end
 
   @doc """

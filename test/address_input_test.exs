@@ -2,12 +2,12 @@ defmodule AddressInputTest do
   use ExUnit.Case
 
   describe "countries/0" do
-    test "returns countries sorted by id" do
-      ids =
+    test "returns countries sorted by name" do
+      names =
         AddressInput.countries()
-        |> Enum.map(& &1.id)
+        |> Enum.map(& &1.name)
 
-      assert ids == Enum.sort(ids)
+      assert names == Enum.sort(names)
     end
 
     test "parses country and subregion data" do
