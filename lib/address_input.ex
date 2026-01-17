@@ -26,6 +26,7 @@ defmodule AddressInput do
   - `required_fields` - list of required address components as atoms, derived
     from the dataset codes (`N`, `O`, `A`, `D`, `C`, `S`, `Z`, `X`).
   - `subregion_type`, `sublocality_type`, `postal_code_type` - label hints.
+  - `postal_code_regex` - compiled regex for validating postal codes.
   - `subregions` - list of [Subregion](`AddressInput.Subregion`) entries.
 
   A [Subregion](`AddressInput.Subregion`) includes `id`, `iso_code`, and `name`.
@@ -41,6 +42,7 @@ defmodule AddressInput do
         sublocality_type: "city",
         subregion_type: "state",
         postal_code_type: "zip",
+        postal_code_regex: ~r/(\\d{5})(?:[ -](\\d{4}))?/,
         subregions: [
           %AddressInput.Subregion{id: "AK", iso_code: "AK", name: "Alaska"},
           ...
@@ -102,6 +104,11 @@ defmodule AddressInput do
       split(metadata["sub_keys"])
       |> Enum.map(&parse_subregion!("#{metadata["id"]}/#{&1}"))
 
+    postal_code_regex =
+      if zip = metadata["zip"] do
+        Regex.compile!("\\A(?:#{zip})\\z")
+      end
+
     %Country{
       id: metadata["key"],
       name: metadata["name"],
@@ -110,6 +117,7 @@ defmodule AddressInput do
       subregion_type: metadata["state_name_type"],
       sublocality_type: metadata["sublocality_name_type"] || "city",
       postal_code_type: metadata["zip_name_type"],
+      postal_code_regex: postal_code_regex,
       subregions: subregions
     }
   end
@@ -136,4 +144,30 @@ defmodule AddressInput do
 
   defp split(term) when is_binary(term), do: String.split(term, "~")
   defp split(_term), do: []
+
+  @doc """
+  Returns `{:ok, postal_code}` if the postal code matches the expected format
+  for the given country. Otherwise, returns `:error`. The provided country must
+  be either a `%Country{}` or a string that resolves to one.
+  """
+  @spec parse_postal_code(String.t(), String.t() | Country.t()) :: {:ok, String.t()} | :error
+  def parse_postal_code(postal_code, country) do
+    case do_parse_postal_code(postal_code, country) do
+      [result] -> {:ok, result}
+      nil -> :error
+    end
+  end
+
+  defp do_parse_postal_code(postal_code, country) when is_binary(country) do
+    if country = get_country(country) do
+      do_parse_postal_code(postal_code, country)
+    end
+  end
+
+  defp do_parse_postal_code(postal_code, %Country{postal_code_regex: regex}) do
+    case regex do
+      %Regex{} -> Regex.run(regex, postal_code, capture: :first)
+      nil -> nil
+    end
+  end
 end

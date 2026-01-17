@@ -11,7 +11,8 @@ defmodule AddressInput.Country do
     :subregions,
     :sublocality_type,
     :subregion_type,
-    :postal_code_type
+    :postal_code_type,
+    :postal_code_regex
   ]
   defstruct @enforce_keys
 
@@ -33,6 +34,7 @@ defmodule AddressInput.Country do
           subregions: [AddressInput.Subregion.t()],
           sublocality_type: String.t() | nil,
           subregion_type: String.t() | nil,
-          postal_code_type: String.t() | nil
+          postal_code_type: String.t() | nil,
+          postal_code_regex: Regex.t() | nil
         }
 end

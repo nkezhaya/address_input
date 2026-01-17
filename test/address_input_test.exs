@@ -39,4 +39,22 @@ defmodule AddressInputTest do
       assert is_nil(AddressInput.get_country("ZZ"))
     end
   end
+
+  describe "parse_postal_code/2" do
+    test "returns the matching postal code for known formats" do
+      assert {:ok, "95000"} = AddressInput.parse_postal_code("95000", "US")
+      assert {:ok, "95000-1234"} = AddressInput.parse_postal_code("95000-1234", "US")
+      assert {:ok, "95000"} = AddressInput.parse_postal_code("95000", AddressInput.get_country("US"))
+    end
+
+    test "rejects non-matching values" do
+      assert :error = AddressInput.parse_postal_code("9500", "US")
+      assert :error = AddressInput.parse_postal_code("95000-1234 extra", "US")
+    end
+
+    test "returns :error when the country has no postal code regex" do
+      assert %AddressInput.Country{} = AddressInput.get_country("UG")
+      assert :error = AddressInput.parse_postal_code("12345", "UG")
+    end
+  end
 end

@@ -27,6 +27,7 @@ country by code.
   sublocality_type: "city",
   subregion_type: "state",
   postal_code_type: "zip",
+  postal_code_regex: ~r/(\\d{5})(?:[ -](\\d{4}))?/,
   subregions: [
     %AddressInput.Subregion{id: "AK", iso_code: "AK", name: "Alaska"},
     ...
