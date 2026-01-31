@@ -59,4 +59,47 @@ defmodule AddressInputTest do
       assert :error = AddressInput.parse_postal_code("12345", "UG")
     end
   end
+
+  describe "address_format/2" do
+    test "returns parsed tokens for the international format" do
+      format = AddressInput.address_format("US")
+
+      assert %AddressInput.Format{} = format
+
+      assert format.tokens == [
+               {:field, :name},
+               :newline,
+               {:field, :organization},
+               :newline,
+               {:field, :address},
+               :newline,
+               {:field, :sublocality},
+               {:text, ", "},
+               {:field, :region},
+               {:text, " "},
+               {:field, :postal_code}
+             ]
+
+      assert AddressInput.Format.fields(format) == [
+               :name,
+               :organization,
+               :address,
+               :sublocality,
+               :region,
+               :postal_code
+             ]
+    end
+
+    test "prefers the local format when requested and falls back when missing" do
+      country = AddressInput.get_country("TW")
+      local = AddressInput.address_format(country, style: :local)
+
+      assert is_binary(country.local_address_format)
+
+      us = AddressInput.address_format("US", style: :local)
+
+      assert local.tokens == AddressInput.Format.parse(country.local_address_format).tokens
+      assert us.tokens == AddressInput.Format.parse("%N%n%O%n%A%n%C, %S %Z").tokens
+    end
+  end
 end

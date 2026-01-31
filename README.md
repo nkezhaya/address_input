@@ -10,6 +10,7 @@ you can use to build address forms or validation rules.
 
 - Parse the libaddressinput dataset into typed structs.
 - Query a sorted list of countries with subregion data.
+- Expose parsed address formatting templates for formatting helpers.
 - Keep the dataset in `priv/metadata.json` to avoid runtime network calls.
 
 ## Quickstart
@@ -19,6 +20,7 @@ sorted by country id. Use `AddressInput.get_country/1` to fetch a single
 country by code.
 
 ```elixir
+iex> AddressInput.get_country("US")
 %AddressInput.Country{
   id: "US",
   name: "UNITED STATES",
@@ -28,22 +30,14 @@ country by code.
   subregion_type: "state",
   postal_code_type: "zip",
   postal_code_regex: ~r/(\\d{5})(?:[ -](\\d{4}))?/,
+  address_format: "%N%n%O%n%A%n%C, %S %Z",
+  local_address_format: nil,
   subregions: [
     %AddressInput.Subregion{id: "AK", iso_code: "AK", name: "Alaska"},
     ...
   ]
 }
 ```
-
-## Attribution
-
-This package includes metadata derived from libaddressinput:
-https://github.com/google/libaddressinput
-
-The metadata is licensed under CC-BY 4.0:
-https://creativecommons.org/licenses/by/4.0/
-
-Changes: extracted JSON and normalized fields; see `priv/metadata.json`.
 
 ## Installation
 
@@ -58,6 +52,12 @@ def deps do
 end
 ```
 
-## License
+## Attribution
 
-Code is licensed under MIT. Metadata is licensed by Google under CC-BY 4.0.
+This package includes metadata derived from libaddressinput:
+https://github.com/google/libaddressinput
+
+The metadata is licensed by Google under CC-BY 4.0:
+https://creativecommons.org/licenses/by/4.0/
+
+Changes: extracted JSON and normalized fields; see `priv/metadata.json`.

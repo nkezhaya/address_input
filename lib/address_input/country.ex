@@ -12,11 +12,13 @@ defmodule AddressInput.Country do
     :sublocality_type,
     :subregion_type,
     :postal_code_type,
-    :postal_code_regex
+    :postal_code_regex,
+    :address_format,
+    :local_address_format
   ]
   defstruct @enforce_keys
 
-  @type required_field ::
+  @type field ::
           :name
           | :organization
           | :address
@@ -30,11 +32,13 @@ defmodule AddressInput.Country do
           id: String.t(),
           name: String.t(),
           default_language: String.t(),
-          required_fields: [required_field()],
+          required_fields: [field()],
           subregions: [AddressInput.Subregion.t()],
           sublocality_type: String.t() | nil,
           subregion_type: String.t() | nil,
           postal_code_type: String.t() | nil,
-          postal_code_regex: Regex.t() | nil
+          postal_code_regex: Regex.t() | nil,
+          address_format: String.t() | nil,
+          local_address_format: String.t() | nil
         }
 end
