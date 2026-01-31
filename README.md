@@ -47,7 +47,7 @@ by adding `address_input` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:address_input, "~> 0.2"}
+    {:address_input, "~> 0.3"}
   ]
 end
 ```
