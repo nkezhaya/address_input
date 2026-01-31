@@ -30,7 +30,7 @@ iex> AddressInput.get_country("US")
   subregion_type: "state",
   postal_code_type: "zip",
   postal_code_regex: ~r/(\\d{5})(?:[ -](\\d{4}))?/,
-  address_format: "%N%n%O%n%A%n%C, %S %Z",
+  address_format: [{:field, :name}, :newline, ...],
   local_address_format: nil,
   subregions: [
     %AddressInput.Subregion{id: "AK", iso_code: "AK", name: "Alaska"},

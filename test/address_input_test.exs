@@ -13,7 +13,6 @@ defmodule AddressInputTest do
     test "parses country and subregion data" do
       countries = AddressInput.countries()
 
-      assert is_list(countries)
       assert [%AddressInput.Country{} | _] = countries
 
       us = Enum.find(countries, &(&1.id == "US"))
@@ -36,7 +35,25 @@ defmodule AddressInputTest do
     end
 
     test "returns nil for unknown countries" do
-      assert is_nil(AddressInput.get_country("ZZ"))
+      refute AddressInput.get_country("ZZ")
+    end
+
+    test "stores parsed tokens on the country struct" do
+      country = AddressInput.get_country("US")
+
+      assert country.address_format == [
+               {:field, :name},
+               :newline,
+               {:field, :organization},
+               :newline,
+               {:field, :address},
+               :newline,
+               {:field, :sublocality},
+               {:text, ", "},
+               {:field, :region},
+               {:text, " "},
+               {:field, :postal_code}
+             ]
     end
   end
 
@@ -57,49 +74,6 @@ defmodule AddressInputTest do
     test "returns :error when the country has no postal code regex" do
       assert %AddressInput.Country{} = AddressInput.get_country("UG")
       assert :error = AddressInput.parse_postal_code("12345", "UG")
-    end
-  end
-
-  describe "address_format/2" do
-    test "returns parsed tokens for the international format" do
-      format = AddressInput.address_format("US")
-
-      assert %AddressInput.Format{} = format
-
-      assert format.tokens == [
-               {:field, :name},
-               :newline,
-               {:field, :organization},
-               :newline,
-               {:field, :address},
-               :newline,
-               {:field, :sublocality},
-               {:text, ", "},
-               {:field, :region},
-               {:text, " "},
-               {:field, :postal_code}
-             ]
-
-      assert AddressInput.Format.fields(format) == [
-               :name,
-               :organization,
-               :address,
-               :sublocality,
-               :region,
-               :postal_code
-             ]
-    end
-
-    test "prefers the local format when requested and falls back when missing" do
-      country = AddressInput.get_country("TW")
-      local = AddressInput.address_format(country, style: :local)
-
-      assert is_binary(country.local_address_format)
-
-      us = AddressInput.address_format("US", style: :local)
-
-      assert local.tokens == AddressInput.Format.parse(country.local_address_format).tokens
-      assert us.tokens == AddressInput.Format.parse("%N%n%O%n%A%n%C, %S %Z").tokens
     end
   end
 end

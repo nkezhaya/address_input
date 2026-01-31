@@ -15,7 +15,6 @@ defmodule AddressInput do
   - `get_country/1` returns a single country by ISO 3166-1 alpha-2 code (case
     insensitive), or `nil` if it is not present. For compatibility with the raw
     dataset keys it also accepts `"data/XX"` strings.
-  - `address_format/2` returns a parsed address format template for a country.
 
   ## Country fields
 
@@ -28,8 +27,8 @@ defmodule AddressInput do
     from the dataset codes (`N`, `O`, `A`, `D`, `C`, `S`, `Z`, `X`).
   - `subregion_type`, `sublocality_type`, `postal_code_type` - label hints.
   - `postal_code_regex` - compiled regex for validating postal codes.
-  - `address_format` - raw formatting template from the dataset (`fmt`).
-  - `local_address_format` - local formatting template (`lfmt`) when present.
+  - `address_format` - parsed formatting template from the dataset (`fmt`).
+  - `local_address_format` - parsed local formatting template (`lfmt`) when present.
   - `subregions` - list of [Subregion](`AddressInput.Subregion`) entries.
 
   A [Subregion](`AddressInput.Subregion`) includes `id`, `iso_code`, and `name`.
@@ -46,7 +45,7 @@ defmodule AddressInput do
         subregion_type: "state",
         postal_code_type: "zip",
         postal_code_regex: ~r/(\\d{5})(?:[ -](\\d{4}))?/,
-        address_format: "%N%n%O%n%A%n%C, %S %Z",
+        address_format: [{:field, :name}, :newline, ...],
         local_address_format: nil,
         subregions: [
           %AddressInput.Subregion{id: "AK", iso_code: "AK", name: "Alaska"},
@@ -56,7 +55,14 @@ defmodule AddressInput do
       "US"
 
   """
-  alias __MODULE__.{Country, Format, Subregion, Util}
+  alias __MODULE__.{Country, Subregion, Util}
+
+  @type token ::
+          {:field, Country.field()}
+          | {:text, String.t()}
+          | :newline
+
+  @type address_format :: [token()]
 
   @external_resource "priv/metadata.json"
   @metadata JSON.decode!(File.read!("#{:code.priv_dir(:address_input)}/metadata.json"))
@@ -119,8 +125,8 @@ defmodule AddressInput do
       sublocality_type: metadata["sublocality_name_type"] || "city",
       postal_code_type: metadata["zip_name_type"],
       postal_code_regex: postal_code_regex,
-      address_format: metadata["fmt"],
-      local_address_format: metadata["lfmt"],
+      address_format: Util.parse_format(metadata["fmt"]),
+      local_address_format: Util.parse_format(metadata["lfmt"]),
       subregions: subregions
     }
   end
@@ -162,37 +168,6 @@ defmodule AddressInput do
     case regex do
       %Regex{} -> Regex.run(regex, postal_code, capture: :first)
       nil -> nil
-    end
-  end
-
-  @doc """
-  Returns a parsed address format template for a country.
-
-  Use `style: :local` to prefer the country-local format when present. When a
-  local format is missing, it falls back to the international format. Returns
-  `nil` when the country or format is missing.
-  """
-  @spec address_format(String.t() | Country.t(), keyword()) :: Format.t() | nil
-  def address_format(country, opts \\ [])
-
-  def address_format(country, opts) when is_binary(country) do
-    case get_country(country) do
-      %Country{} = resolved -> address_format(resolved, opts)
-      _ -> nil
-    end
-  end
-
-  def address_format(%Country{} = country, opts) do
-    style = Keyword.get(opts, :style, :international)
-
-    format =
-      case style do
-        :local -> country.local_address_format || country.address_format
-        _ -> country.address_format
-      end
-
-    if format do
-      Format.parse(format)
     end
   end
 end
