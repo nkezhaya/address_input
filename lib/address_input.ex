@@ -68,9 +68,8 @@ defmodule AddressInput do
   """
   @spec countries() :: [Country.t()]
   def countries do
-    country_tree()
-    |> :gb_trees.values()
-    |> Enum.sort_by(& &1.name)
+    {_, sorted} = country_tree()
+    sorted
   end
 
   @doc """
@@ -82,7 +81,7 @@ defmodule AddressInput do
   def get_country(country) do
     # "ZZ" seems to be a blank country
     key = String.upcase(country)
-    tree = country_tree()
+    {tree, _} = country_tree()
 
     if :gb_trees.is_defined(key, tree) do
       :gb_trees.get(key, tree)

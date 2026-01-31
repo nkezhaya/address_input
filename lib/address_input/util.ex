@@ -25,7 +25,12 @@ defmodule AddressInput.Util do
           tree
       end)
 
-    :persistent_term.put(:address_input_countries, countries)
+    sorted =
+      countries
+      |> :gb_trees.values()
+      |> Enum.sort_by(& &1.name)
+
+    :persistent_term.put(:address_input_countries, {countries, sorted})
   end
 
   defp build_country!(metadata, country) do
