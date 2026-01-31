@@ -28,7 +28,7 @@ defmodule AddressInput.MixProject do
   end
 
   def application do
-    []
+    [mod: {AddressInput.Application, []}]
   end
 
   defp package do
@@ -52,6 +52,7 @@ defmodule AddressInput.MixProject do
 
   defp deps do
     [
+      {:benchee, "~> 1.2", only: :dev},
       {:req, "~> 0.5", only: [:dev, :test]},
       {:lazy_html, "~> 0.1", only: [:dev, :test]},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
