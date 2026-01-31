@@ -1,6 +1,80 @@
 defmodule AddressInput.Util do
   @moduledoc false
 
+  alias AddressInput.{Country, Subregion}
+
+  @external_resource "priv/metadata.json"
+
+  @doc false
+  def load_countries do
+    path = "#{:code.priv_dir(:address_input)}/metadata.json"
+
+    metadata =
+      path
+      |> File.read!()
+      |> JSON.decode!()
+
+    countries =
+      Enum.reduce(metadata, :gb_trees.empty(), fn
+        {<<"data/", code::binary-size(2)>>, %{"name" => name} = country}, tree
+        when is_binary(name) ->
+          country = build_country!(metadata, country)
+          :gb_trees.insert(code, country, tree)
+
+        _, tree ->
+          tree
+      end)
+
+    :persistent_term.put(:address_input_countries, countries)
+  end
+
+  defp build_country!(metadata, country) do
+    required_fields =
+      if required = country["require"] do
+        required
+        |> String.to_charlist()
+        |> Enum.map(&code_to_field/1)
+      else
+        []
+      end
+
+    subregions =
+      split(country["sub_keys"])
+      |> Enum.map(&parse_subregion!(metadata, "#{country["id"]}/#{&1}"))
+
+    postal_code_regex =
+      if zip = country["zip"] do
+        Regex.compile!("\\A(?:#{zip})\\z")
+      end
+
+    %Country{
+      id: country["key"],
+      name: country["name"],
+      default_language: country["lang"],
+      required_fields: required_fields,
+      subregion_type: country["state_name_type"],
+      sublocality_type: country["sublocality_name_type"] || "city",
+      postal_code_type: country["zip_name_type"],
+      postal_code_regex: postal_code_regex,
+      address_format: parse_format(country["fmt"]),
+      local_address_format: parse_format(country["lfmt"]),
+      subregions: subregions
+    }
+  end
+
+  defp parse_subregion!(metadata, <<"data/", _::binary-size(2), "/", subregion_id::binary>> = id) do
+    subregion = metadata[id]
+
+    %Subregion{
+      id: subregion_id,
+      iso_code: subregion["isoid"],
+      name: subregion["name"] || subregion["key"]
+    }
+  end
+
+  defp split(term) when is_binary(term), do: String.split(term, "~")
+  defp split(_term), do: []
+
   @spec code_to_field(char()) :: AddressInput.Country.field()
   def code_to_field(?N), do: :name
   def code_to_field(?O), do: :organization

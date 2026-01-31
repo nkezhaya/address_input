@@ -13,8 +13,7 @@ defmodule AddressInput do
   - `countries/0` returns all available countries sorted by name. Each country
     includes parsed subregions.
   - `get_country/1` returns a single country by ISO 3166-1 alpha-2 code (case
-    insensitive), or `nil` if it is not present. For compatibility with the raw
-    dataset keys it also accepts `"data/XX"` strings.
+    insensitive), or `nil` if it is not present.
 
   ## Country fields
 
@@ -55,7 +54,7 @@ defmodule AddressInput do
       "US"
 
   """
-  alias __MODULE__.{Country, Subregion, Util}
+  alias __MODULE__.Country
 
   @type token ::
           {:field, Country.field()}
@@ -64,20 +63,13 @@ defmodule AddressInput do
 
   @type address_format :: [token()]
 
-  @external_resource "priv/metadata.json"
-  @metadata JSON.decode!(File.read!("#{:code.priv_dir(:address_input)}/metadata.json"))
-
   @doc """
   Returns the list of available countries as [Country](`AddressInput.Country`) structs.
   """
   @spec countries() :: [Country.t()]
   def countries do
-    @metadata
-    |> Enum.filter(fn
-      {<<"data/", _::binary-size(2)>>, %{"name" => name}} when is_binary(name) -> true
-      _ -> false
-    end)
-    |> Enum.map(fn {_, metadata} -> build_country!(metadata) end)
+    country_tree()
+    |> :gb_trees.values()
     |> Enum.sort_by(& &1.name)
   end
 
@@ -87,63 +79,19 @@ defmodule AddressInput do
   Returns `nil` when the country is not found.
   """
   @spec get_country(String.t()) :: Country.t() | nil
-  def get_country("data/" <> country), do: get_country(country)
-
   def get_country(country) do
     # "ZZ" seems to be a blank country
-    case @metadata["data/#{String.upcase(country)}"] do
-      %{"name" => _} = metadata -> build_country!(metadata)
-      _ -> nil
+    key = String.upcase(country)
+    tree = country_tree()
+
+    if :gb_trees.is_defined(key, tree) do
+      :gb_trees.get(key, tree)
     end
   end
 
-  defp build_country!(metadata) do
-    required_fields =
-      if required = metadata["require"] do
-        required
-        |> String.to_charlist()
-        |> Enum.map(&Util.code_to_field/1)
-      else
-        []
-      end
-
-    subregions =
-      split(metadata["sub_keys"])
-      |> Enum.map(&parse_subregion!("#{metadata["id"]}/#{&1}"))
-
-    postal_code_regex =
-      if zip = metadata["zip"] do
-        Regex.compile!("\\A(?:#{zip})\\z")
-      end
-
-    %Country{
-      id: metadata["key"],
-      name: metadata["name"],
-      default_language: metadata["lang"],
-      required_fields: required_fields,
-      subregion_type: metadata["state_name_type"],
-      sublocality_type: metadata["sublocality_name_type"] || "city",
-      postal_code_type: metadata["zip_name_type"],
-      postal_code_regex: postal_code_regex,
-      address_format: Util.parse_format(metadata["fmt"]),
-      local_address_format: Util.parse_format(metadata["lfmt"]),
-      subregions: subregions
-    }
+  defp country_tree do
+    :persistent_term.get(:address_input_countries)
   end
-
-  defp parse_subregion!(id) do
-    subregion = @metadata[id]
-    <<"data/", _::binary-size(2), "/", id::binary>> = id
-
-    %Subregion{
-      id: id,
-      iso_code: subregion["isoid"],
-      name: subregion["name"] || subregion["key"]
-    }
-  end
-
-  defp split(term) when is_binary(term), do: String.split(term, "~")
-  defp split(_term), do: []
 
   @doc """
   Returns `{:ok, postal_code}` if the postal code matches the expected format

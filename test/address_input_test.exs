@@ -31,7 +31,6 @@ defmodule AddressInputTest do
 
     test "normalizes the country code" do
       assert %AddressInput.Country{id: "US"} = AddressInput.get_country("us")
-      assert %AddressInput.Country{id: "US"} = AddressInput.get_country("data/us")
     end
 
     test "returns nil for unknown countries" do
